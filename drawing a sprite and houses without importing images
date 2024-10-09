@@ -1,0 +1,95 @@
+import pygame
+import sys
+
+pygame.init()
+
+# Configuración de la ventana del juego
+screen_width = 800
+screen_height = 600
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("Village")
+
+# Colores
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+BROWN = (139, 69, 19)
+BLUE = (0, 0, 255)
+SKIN = (255, 224, 189)
+BLACK = (0, 0, 0, 0)
+
+
+player_pos = [screen_width // 2, screen_height // 2]
+player_speed = 5
+
+
+clock = pygame.time.Clock()
+
+def draw_buildings(screen):
+    # Dibujar una casa
+    pygame.draw.rect(screen, BROWN, (100, 400, 100, 100))  # Base de la casa
+    pygame.draw.polygon(screen, BROWN, [(100, 400), (150, 350), (200, 400)])  # Tejado
+    
+    # Dibujar una tienda
+    pygame.draw.rect(screen, GREEN, (300, 400, 150, 100))  # Base de la tienda
+    pygame.draw.polygon(screen, GREEN, [(300, 400), (375, 350), (450, 400)])  # Tejado
+
+def draw_player(screen, pos):
+    # Definir el tamaño del jugador
+    body_width = 40
+    body_height = 60
+    head_size = 30
+    leg_width = 10
+    leg_height = 30
+    arm_width = 10
+    arm_height = 40
+
+    # Cuerpo
+    pygame.draw.rect(screen, BLUE, (pos[0] + 5, pos[1] + 10, body_width, body_height))
+    
+    # Cabeza
+    pygame.draw.rect(screen, SKIN, (pos[0] + 10, pos[1], head_size, head_size))
+    
+    # Ojos
+    pygame.draw.circle(screen, BLACK, (pos[0] + 20, pos[1] + 10), 5)
+    pygame.draw.circle(screen, BLACK, (pos[0] + 30, pos[1] + 10), 5)
+    
+    # Brazos
+    pygame.draw.rect(screen, BLUE, (pos[0] - arm_width, pos[1] + 10, arm_width, arm_height))  # Brazo izquierdo
+    pygame.draw.rect(screen, BLUE, (pos[0] + body_width, pos[1] + 10, arm_width, arm_height))  # Brazo derecho
+    
+    # Piernas
+    pygame.draw.rect(screen, BLUE, (pos[0] + 5, pos[1] + body_height + 10, leg_width, leg_height))  # Pierna izquierda
+    pygame.draw.rect(screen, BLUE, (pos[0] + body_width - leg_width, pos[1] + body_height + 10, leg_width, leg_height))  # Pierna derecha
+
+def game_loop():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            player_pos[0] -= player_speed
+        if keys[pygame.K_RIGHT]:
+            player_pos[0] += player_speed
+        if keys[pygame.K_UP]:
+            player_pos[1] -= player_speed
+        if keys[pygame.K_DOWN]:
+            player_pos[1] += player_speed
+
+        
+        screen.fill(WHITE)
+
+        # Dibujar edificios
+        draw_buildings(screen)
+
+        # Dibujar jugador
+        draw_player(screen, player_pos)
+
+        # Actualizar pantalla
+        pygame.display.flip()
+        clock.tick(30)
+
+if __name__ == "__main__":
+    game_loop()
