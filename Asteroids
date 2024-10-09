@@ -1,0 +1,153 @@
+import pygame
+import math
+import random
+
+# Dimensiones de la ventana
+ancho_ventana = 1280
+largo_ventana = 720
+
+# Inicialización de pygame
+pygame.init()
+screen = pygame.display.set_mode((ancho_ventana, largo_ventana))
+pygame.display.set_caption("Asteroids")
+clock = pygame.time.Clock()
+
+# Variables del juego
+Puntuacion = 0
+arial = pygame.font.SysFont(None, 40)  # Fuente por defecto con tamaño 40
+
+# Función para mostrar la puntuación en pantalla
+def mostrar_puntuacion(screen, text, colour, dimensions, x, y):
+    font = pygame.font.SysFont(None, dimensions)
+    text_surface = font.render(text, True, colour)
+    screen.blit(text_surface, (x, y))
+
+# Función para crear enemigos aleatorios
+def create_enemy():
+    x = random.randint(0, ancho_ventana)
+    y = random.randint(0, largo_ventana)
+    enemies.append({'pos': [x, y], 'speed': random.uniform(50, 150), 'angle': random.uniform(0, 360), 'score': 10})
+
+# Función para dibujar enemigos
+def draw_enemies():
+    for enemy in enemies:
+        vertices = []
+        sides = 8  # octágono
+        radius = 20
+        for i in range(sides):
+            angle = math.radians(i * (360 / sides))
+            x = enemy['pos'][0] + radius * math.cos(angle)
+            y = enemy['pos'][1] + radius * math.sin(angle)
+            vertices.append((x, y))
+        pygame.draw.polygon(screen, (255, 255, 255), vertices)
+
+# Variables del jugador
+puntos = [(100, 100)]  # Posición inicial del jugador
+cannon_pos = puntos[0]
+bullet_speed = 500
+bullet_pos = cannon_pos
+bullet_active = False
+
+# Lista de enemigos
+enemies = []
+
+# Función para reiniciar el juego cuando se pierde
+def you_lost():
+    global Puntuacion, puntos, enemies
+    Puntuacion = 0
+    puntos = [(100, 100)]  # Posición inicial del jugador
+    enemies.clear()  # Elimina todos los enemigos
+
+# Bucle principal del juego
+running = True
+dt = 0
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    screen.fill((0, 0, 0))  # pantalla con fondo negro
+
+    keys = pygame.key.get_pressed()
+
+    if keys[pygame.K_w]:
+        puntos = [(x, y - 5) for x, y in puntos]
+    if keys[pygame.K_s]:
+        puntos = [(x, y + 5) for x, y in puntos]
+    if keys[pygame.K_a]:
+        puntos = [(x - 5, y) for x, y in puntos]
+    if keys[pygame.K_d]:
+        puntos = [(x + 5, y) for x, y in puntos]
+
+    for i in range(len(puntos)):
+        if puntos[i][0] < 0:
+            puntos[i] = (1280, puntos[i][1])
+        elif puntos[i][0] > 1280:
+            puntos[i] = (0, puntos[i][1])
+        if puntos[i][1] < 0:
+            puntos[i] = (puntos[i][0], 700)
+        elif puntos[i][1] > 700:
+            puntos[i] = (puntos[i][0], 0)
+
+    cannon_pos = puntos[0]
+
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    dx = mouse_x - cannon_pos[0]
+    dy = mouse_y - cannon_pos[1]
+    cannon_angle = math.degrees(math.atan2(-dy, dx)) - 90
+
+    rotated_triangle = pygame.Surface((40, 40), pygame.SRCALPHA)
+    rotated_triangle.fill((0, 0, 0, 0))
+    pygame.draw.polygon(rotated_triangle, (255, 255, 255), [(20, 0), (0, 40), (40, 40)])
+    rotated_triangle = pygame.transform.rotate(rotated_triangle, cannon_angle - 90)
+    rotated_rect = rotated_triangle.get_rect(center=cannon_pos)
+
+    if pygame.mouse.get_pressed()[0] and not bullet_active:
+        bullet_active = True
+        bullet_pos = (cannon_pos[0], cannon_pos[1])
+        direction = (math.cos(math.radians(cannon_angle)), -math.sin(math.radians(cannon_angle)))
+
+    if bullet_active:
+        bullet_pos = (bullet_pos[0] + direction[0] * bullet_speed * dt, bullet_pos[1] + direction[1] * bullet_speed * dt)
+        pygame.draw.circle(screen, (255, 0, 0), (int(bullet_pos[0]), int(bullet_pos[1])), 10)
+
+        if bullet_pos[0] < 0 or bullet_pos[0] > ancho_ventana or bullet_pos[1] < 0 or bullet_pos[1] > largo_ventana:
+            bullet_active = False
+
+        for enemy in enemies:
+            if math.hypot(bullet_pos[0] - enemy['pos'][0], bullet_pos[1] - enemy['pos'][1]) < 20:
+                bullet_active = False
+                Puntuacion += enemy['score']
+                enemies.remove(enemy)
+
+    for enemy in enemies:
+        enemy['pos'][0] += math.cos(math.radians(enemy['angle'])) * enemy['speed'] * dt
+        enemy['pos'][1] += math.sin(math.radians(enemy['angle'])) * enemy['speed'] * dt
+
+        if enemy['pos'][0] < 0:
+            enemy['pos'][0] = ancho_ventana
+        elif enemy['pos'][0] > ancho_ventana:
+            enemy['pos'][0] = 0
+        if enemy['pos'][1] < 0:
+            enemy['pos'][1] = largo_ventana
+        elif enemy['pos'][1] > largo_ventana:
+            enemy['pos'][1] = 0
+
+        if math.hypot(cannon_pos[0] - enemy['pos'][0], cannon_pos[1] - enemy['pos'][1]) < 20:
+            you_lost()
+
+    if random.random() < 0.01:
+        create_enemy()
+
+    draw_enemies()
+
+    screen.blit(rotated_triangle, rotated_rect)
+
+    mostrar_puntuacion(screen, str(Puntuacion), (255, 0, 0), 40, 1000, 50)
+
+    pygame.display.flip()
+
+    dt = clock.tick(60) / 1000
+
+pygame.quit()
